@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <Preference
+        app:key="cleardb"
+        app:summary="Remove all saved locations"
+        app:title="Clear DB" />
+
+    <Preference
+        app:key="sharedb"
+        app:summary="Export saved locations"
+        app:title="Export DB" />
+
+</PreferenceScreen>
