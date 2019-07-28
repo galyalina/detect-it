@@ -59,6 +59,7 @@ dependencies {
 
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.0.0'
+    implementation 'androidx.preference:preference:1.1.0-rc01'
     kapt "io.requery:requery-processor:1.6.1"
     // location
     implementation "com.patloew.rxlocation:rxlocation:1.0.5"
