@@ -2,10 +2,9 @@ package com.detectit.view.locations
 
 import android.os.Bundle
 import android.view.Menu
+import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import com.detectit.detection.R
-
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -13,15 +12,27 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.detectit.detection.general.MasterApplication
+import com.detectit.model.location.DetectionLocation
+import com.detectit.model.location.Mapper
 import com.detectit.model.location.PointOfInterestEntity
 import com.google.android.gms.maps.model.LatLngBounds
+import com.google.gson.Gson
+import org.json.JSONArray
 import timber.log.Timber
+import java.io.File
+import android.content.Intent
+import android.net.Uri
+import com.detectit.detection.R
+import com.detectit.utils.toPrettyJson
+import java.util.*
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var mMap: GoogleMap
     private val bounds = LatLngBounds.Builder()
+    private var points = emptyList<DetectionLocation>()
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,6 +77,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 ?.observable()
                 ?.subscribe(
                         {
+                            points += (Mapper.toDetectionLocation(it))
                             addPoint(LatLng(it.latitude, it.longitude))
                             Timber.i("Point of interest fetched ${it}")
                         },
@@ -73,14 +85,46 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                             Timber.e("Failed to fetch point of interest, ${it.localizedMessage}")
                         },
                         {
-                            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 50))
+                            if (points.isNotEmpty())
+                                mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 50))
                         })
 
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.main_menu, menu)
+        menuInflater.inflate(R.menu.locations_actionbar_menu, menu)
         return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        when (item?.itemId) {
+            R.id.clear -> (application as? MasterApplication)
+                    ?.data
+                    ?.delete(PointOfInterestEntity::class)
+                    ?.where(PointOfInterestEntity.ID.notNull())
+                    ?.get()?.single()?.subscribe()
+            R.id.export -> {
+                var jsArray = JSONArray(Gson().toJson(points))
+                val file = File(applicationContext.externalCacheDir, "detection_points.json")
+                file.writeText(jsArray.toPrettyJson())
+                Timber.d("Map -> ${jsArray.toPrettyJson()}")
+                shareFile(file)
+            }
+            R.id.home -> this.finish()
+            else -> return false
+        }
+        return true
+    }
+
+
+    private fun shareFile(file: File) {
+        val emailIntent = Intent(Intent.ACTION_SENDTO)
+        intent.type = "text/plain";
+        emailIntent.data = Uri.parse("mailto:")
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, "detection_points.json ${Date()}")
+        emailIntent.putExtra(Intent.EXTRA_TEXT, "Body")
+        emailIntent.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://$file"))
+        startActivity(Intent.createChooser(emailIntent, "Please choose how do you want to share it"))
     }
 
 }

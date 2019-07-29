@@ -45,7 +45,7 @@ class MasterApplication : Application() {
             if (dataStore == null) {
                 val source = DatabaseSource(this, Models.DEFAULT, 1)
                 if (BuildConfig.DEBUG) {
-                    source.setTableCreationMode(TableCreationMode.DROP_CREATE)
+                    source.setTableCreationMode(TableCreationMode.CREATE_NOT_EXISTS)
                 }
                 dataStore = KotlinReactiveEntityStore(KotlinEntityDataStore(source.configuration))
             }
@@ -55,7 +55,7 @@ class MasterApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         StrictMode.enableDefaults()
-        Timber.plant(timberDebugTree)
+        Timber.plant(Timber.DebugTree())
     }
 
 
