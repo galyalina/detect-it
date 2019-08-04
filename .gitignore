@@ -11,3 +11,6 @@
 
 /.gradle/
 /.idea/
+app/src/main/assets/detect.tflite
+app/src/main/assets/labelmap.txt
+screenshot

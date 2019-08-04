@@ -63,8 +63,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         showPointsOnMap()
     }
 
-    private fun addPoint(point: LatLng) {
-        mMap.addMarker(MarkerOptions().position(point).title("Marker in Sydney"))
+    private fun addPoint(point: LatLng, title: String) {
+        mMap.addMarker(MarkerOptions().position(point).title(title))
         bounds.include(point)
     }
 
@@ -78,7 +78,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 ?.subscribe(
                         {
                             points += (Mapper.toDetectionLocation(it))
-                            addPoint(LatLng(it.latitude, it.longitude))
+                            addPoint(LatLng(it.latitude, it.longitude), it.name)
                             Timber.i("Point of interest fetched ${it}")
                         },
                         {
@@ -87,6 +87,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         {
                             if (points.isNotEmpty())
                                 mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 50))
+                            else {
+                                mMap.clear()
+                            }
                         })
 
     }
@@ -98,11 +101,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
-            R.id.clear -> (application as? MasterApplication)
-                    ?.data
-                    ?.delete(PointOfInterestEntity::class)
-                    ?.where(PointOfInterestEntity.ID.notNull())
-                    ?.get()?.single()?.subscribe()
+            R.id.clear -> {
+                (application as? MasterApplication)
+                        ?.data
+                        ?.delete(PointOfInterestEntity::class)
+                        ?.where(PointOfInterestEntity.ID.notNull())
+                        ?.get()
+                        ?.single()
+                        ?.subscribe(
+                                {
+                                    showPointsOnMap()
+                                },
+                                {
+                                    Timber.e("Failed to remove points of interest, ${it.localizedMessage}")
+                                })
+            }
             R.id.export -> {
                 var jsArray = JSONArray(Gson().toJson(points))
                 val file = File(applicationContext.externalCacheDir, "detection_points.json")
